@@ -19,10 +19,10 @@ jobs:
         cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: npm install
       
-    - name: Install html-inline plugin
-      run: npm i -D html-webpack-inline-source-plugin html-webpack-plugin
+    - name: Install html-inline
+      run: npm install -D html-inline
       
     - name: Build single HTML
       run: |
