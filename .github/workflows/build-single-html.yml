@@ -1,4 +1,4 @@
-name: Build React Single HTML
+name: Build to Single HTML
 on:
   push:
     branches: [ main ]
@@ -17,23 +17,54 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-glob: "**/package-lock.json"
         
-    - name: Generate lockfile and install
+    - name: Generate package.json
       run: |
-        npm install
-      
-    - name: Install html-inline
-      run: npm install -D html-inline
-      
-    - name: Build single HTML
-      run: |
-        npm run build
-        npx html-inline ./build/index.html ./build/index.html
+        cat > package.json << EOF
+        {
+          "name": "my-project",
+          "version": "1.0.0",
+          "private": true,
+          "scripts": {
+            "build": "parcel build src/index.html --dist-dir dist --public-url ./"
+          },
+          "devDependencies": {
+            "parcel": "^2.11.0"
+          }
+        }
+        EOF
         
-    - name: Upload single HTML artifact
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Inline assets to single HTML
+      run: |
+        npm install --save-dev web-resource-inliner
+        cat > inline.js << 'EOF'
+        const fs = require("fs");
+        const inline = require("web-resource-inliner");
+        
+        inline.html({
+          fileContent: fs.readFileSync("dist/index.html", "utf8"),
+          relativeTo: "dist"
+        }, (err, result) => {
+          if (err) throw err;
+          fs.writeFileSync("dist/index.html", result);
+          console.log("✅ Single HTML file created at dist/index.html");
+        });
+        EOF
+        node inline.js
+      
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: single-html-app
-        path: ./build/index.html
-        retention-days: 30
+        name: single-html-build
+        path: dist/index.html
+        
+    - name: Display file size
+      run: |
+        echo "📊 Final HTML file size:"
+        ls -lh dist/index.html
