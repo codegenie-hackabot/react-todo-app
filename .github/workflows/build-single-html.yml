@@ -1,0 +1,37 @@
+name: Build React Single HTML
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install html-inline plugin
+      run: npm i -D html-webpack-inline-source-plugin html-webpack-plugin
+      
+    - name: Build single HTML
+      run: |
+        npm run build
+        npx html-inline ./build/index.html ./build/index.html
+        
+    - name: Upload single HTML artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: single-html-app
+        path: ./build/index.html
+        retention-days: 30
